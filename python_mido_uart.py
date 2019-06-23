@@ -1,0 +1,256 @@
+import sys
+import os
+import time
+import ctypes
+import threading
+import serial
+import mido
+
+import com_ports        # script module
+# connected = False
+
+def script_path():
+    currentPath = os.path.realpath(os.path.dirname(sys.argv[0]))
+    os.chdir(currentPath)
+    return currentPath
+    
+    
+def cut_thing(thing, n):
+    return [thing[x:x+n] for x in range(0, len(thing), n)]
+    
+    
+def find_proper_port():
+    sensorPort = '-1'
+    for port, desc, hwid in sorted(com_ports.comports()):
+        print("%s: %s [%s]" % (port, desc, hwid))
+        if 'lightprobe' in desc.lower():
+            sensorPort = port
+    print()
+    return sensorPort
+    
+    
+def init_serial(com, midi):
+    # com = find_proper_port()
+    if midi:
+        ser = serial.Serial(
+            # port='COM57',
+            port=com,
+            baudrate=31250,     # MIDI speed
+            parity=serial.PARITY_ODD,
+            # stopbits=serial.STOPBITS_TWO,
+            stopbits=serial.STOPBITS_ONE,
+            bytesize=serial.EIGHTBITS
+        )
+    else:
+        ser = serial.Serial(
+            # port='COM57',
+            port=com,
+            # baudrate=9600,
+            baudrate=31250,
+            parity=serial.PARITY_ODD,
+            # stopbits=serial.STOPBITS_TWO,
+            stopbits=serial.STOPBITS_ONE,
+            bytesize=serial.SEVENBITS
+        )
+    ser.isOpen()
+    return ser
+    
+    
+def handle_data(data):
+    # print(data)
+    # outport = mido.open_output()
+    # data = list(data_to_play())
+    # data = [ord(item) for item in list(data)]
+    if False:
+        indexes = [key for key, value in enumerate(data) if value==0x90]
+        notesData = [data[indexes[key]:indexes[key+1]] for key, index in enumerate(indexes[:-1])]
+    else:
+        pass
+    # for pairs in notesData:
+    if True:
+        pairs = data
+        if not len(pairs)%2:
+            # continue
+            return False
+        toPlay = cut_thing(pairs, 3)
+        # print(toPlay)
+        for pair in toPlay:
+            if max(pair[1:]) > 127:
+                return False
+            if pair[0] == 0x90:
+                noteValue = 'note_on'
+                if notesPlayed[pair[1]]:
+                    # print("note: {}, already played".format(pair))
+                    return False
+                else:
+                    # set flag
+                    notesPlayed[pair[1]] = True
+            elif pair[0] == 0x91:
+                noteValue = 'note_off'
+                notesPlayed[pair[1]] = False
+            else:
+                noteValue = 'note_on'
+            msg = mido.Message(noteValue, note=pair[1]%127, velocity=pair[2]%127)
+            outport.send(msg)
+        # sleep every pairs
+        # time.sleep(0.1)
+    # print('--'*20)
+    return True
+    
+    
+def read_from_port(ser, midi):
+    connected = False
+    # global container
+    container = []
+    start = False
+    while not connected:
+        connected = True
+        while True:
+            if midi:
+                # reading = ser.readline().decode()
+                # reading = ser.readline()
+                reading = ser.read(1)
+                if list(reading) == [145] and start:
+                    container.append(reading)
+                    start = False
+                    data = [ord(item) for item in container]
+                    handle_data(data)
+                    container = []
+                    
+                if list(reading) == [144] or start:
+                    container.append(reading)
+                    start = True
+                    # print()
+                    
+                print(reading, end=', ')
+                # handle_data(reading)
+                # container.append(reading)
+                # if len(container) > 10:
+                    # return False
+            else:
+                reading = ser.readline()
+                try:
+                    reading = [int(item) for item in reading.strip().decode('utf-8').split()]
+                except:
+                    continue
+                # print(reading)
+                handle_data(reading)
+    return True
+    
+    
+def data_to_play():
+    ''' this is just example data to be played '''
+    data = b'8\xc08\xc00\xff\x90"A=\x16\xe6"A?\x16\x06\x91\x90P\x16&\x91\x90(\x16F\x91\x90Q\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14A<\x16\xd6"A>\x16\xf6"A@\x16\x16\x91\x90(\x166\x91\x90\x14AE\x16f\x91\x90\x14\xc1\x00\n'
+    data = b'\xc6"A=\x16\xe6"A?\x16\x06\x91\x90P\x16&\x91\x90(\x16F\x91\x90Q\x16f\x91\x90\x14\xc1\x00(\xc6"A=\x16\xe6"A?\x16\x06\x91\x90P\x16&\x91\x90(\x16F\x91\x90Q\x16f\x91\x90\x14\xc1\x00(\xc6"A=\x16\xe6"A?\x16\x06\x91\x90P\x16&\x91\x90(\x16F\x91\x90Q\x16f\x91\x90\x14\xc1\x00\n'
+    return data
+    
+    
+def notes_dictio():
+    '''
+        True - on    
+        False - off
+        dictio key - note value
+    '''
+    data = {
+        60: False,
+        70: False,
+        80: False,
+        85: False,
+    }
+    return data
+    
+    
+if __name__ == "__main__":
+    global outport
+    outport = mido.open_output()
+    global notesPlayed
+    notesPlayed = notes_dictio()
+    
+    # '''
+    script_path()
+    ser = init_serial('COM7', False)
+    time.sleep(0.5)
+    thread = threading.Thread(target=read_from_port, args=(ser, False,))
+    thread.start()
+    
+    # '''
+    
+    '''
+    # handle with some data
+    outport = mido.open_output()
+    data = list(data_to_play())
+    indexes = [key for key, value in enumerate(data) if value==0x90]
+    notesData = [data[indexes[key]:indexes[key+1]] for key, index in enumerate(indexes[:-1])]
+    for pairs in notesData:
+        print(pairs)
+        if not len(pairs)%2:
+            continue
+        toPlay = cut_thing(pairs[1:], 2)
+        for pair in toPlay:
+            msg = mido.Message('note_on', note=pair[0]%127, velocity=pair[1]%127)
+            outport.send(msg)
+        # sleep every pairs
+        time.sleep(0.1)
+    print('--'*20)
+    '''
+    
+    '''
+    some = mido.Message('note_on', note=50, velocity=60)
+    thing = mido.Message('note_off', note=50, velocity=60)
+    outport.send(some)
+    time.sleep(2.61)
+    outport.send(thing)
+    '''
+    
+    
+    '''
+    outport = mido.open_output()
+    for x in range(100):
+        msg = mido.Message('note_on', note=50, velocity=60)
+        outport.send(msg)
+        time.sleep(0.01)
+        
+    msg = mido.Message('note_off', note=50, velocity=60)
+    '''
+    
+    
+    '''
+    outport = mido.open_output()
+    for x in range(40, 127, 1):
+        msg = mido.Message('note_on', note=x, velocity=60)
+        outport.send(msg)
+        time.sleep(0.05)
+    '''
+    
+    
+    '''
+    msg = mido.Message('note_on', note=60)
+    msg.type
+    outport = mido.open_output()
+    outport.send(msg)
+    print(42)
+    '''
+    
+    
+    
+    
+    
+    
+'''
+pip:
+    pip install mido
+    pip install python-rtmidi
+    
+    
+info:
+    0x90 --> note_on
+    0x80 --> note_off
+    
+    
+package to read from MIDI device:
+    https://pypi.org/project/py-midi/
+    
+    
+'''
+
+
