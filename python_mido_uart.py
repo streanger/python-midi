@@ -86,9 +86,12 @@ def handle_data(data):
     this functions take data, which can be convert to msg:
         command, note, velocity = data
     if note was already played, function will return False
+    
+    change name of this function to -> 'play_sound(data)'
     '''
-    # print(data)
+    
     command, note, velocity = data
+    print("note data: {}".format(note), end='\r', flush=True)
     if command == 0x90:
         noteValue = 'note_on'
         if notesPlayed[note]:
@@ -161,12 +164,14 @@ if __name__ == "__main__":
     midi = True     # it is used in serial initialization, and reading data
     script_path()
     ser = init_serial('COM7', midi)
-    time.sleep(0.5)
+    time.sleep(0.1)
     thread = threading.Thread(target=read_from_port, args=(ser, midi,))
     # thread = threading.Thread(target=debug_read_from_port, args=(ser, midi,))     # debug
     thread.start()
-    
 
+    while True:
+        # do something here e.g. draw keyboard :)
+        time.sleep(2)
     
     
 '''
@@ -202,6 +207,8 @@ tips:
 links:
     https://ccrma.stanford.edu/~craig/articles/linuxmidi/misc/essenmidi.html
     
+    https://create.arduino.cc/projecthub/labsud/midi-keypad-c68fd2
+    
     
     
   Command            Meaning             # parameters       param 1            param 2
@@ -220,8 +227,22 @@ and the second half contains the MIDI channel for which the command is for. For 
 and the digit 1 specifies the second channel (the first channel being 0). The 0xF0 set of commands do not follow this convention.    
     
     
-    
     arduino forum:
         https://forum.arduino.cc/index.php?topic=550052.0
     
+    
+think of:
+    -lm386 and speaker output from arduino
+    -
+    
+    
+Arduino MIDI:
+    -use this library --> https://github.com/tttapa/MIDI_controller
+    
+    
 '''
+
+
+
+
+
