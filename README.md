@@ -28,3 +28,6 @@ My struggles with MIDI, with using arduino and python
   - to be done
   
   
+## GUI - keyboard visualisation
+
+![image](keyboard_gui.png)
