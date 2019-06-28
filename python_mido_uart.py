@@ -8,6 +8,8 @@ import mido
 
 import com_ports        # script module
 # connected = False
+import keyboard_translate
+
 
 def script_path():
     currentPath = os.path.realpath(os.path.dirname(sys.argv[0]))
@@ -118,6 +120,15 @@ def handle_data(data):
             noteValue = 'note_on'
     msg = mido.Message(noteValue, note=note, velocity=velocity)
     outport.send(msg)                       # make sound
+    
+    
+    # show keyboard
+    global image
+    global combined
+    codes = [note]
+    out = keyboard_translate.draw_over_image(image, combined, codes)
+    # cv2.imwrite("some.png", out)
+    keyboard_translate.show_image('after drawing image', out)
     return True
     
     
@@ -255,6 +266,10 @@ if __name__ == "__main__":
     outport = mido.open_output()
     global notesPlayed
     notesPlayed = notes_dictio()
+    global combined
+    combined = keyboard_translate.combine_keys_positions()
+    global image
+    image = keyboard_translate.create_blank_image(300, 1350)
     
     midi = True     # it is used in serial initialization, and reading data
     # midi = False     # it is used in serial initialization, and reading data
@@ -265,6 +280,7 @@ if __name__ == "__main__":
     # thread = threading.Thread(target=debug_read_from_port, args=(ser, midi,))     # debug
     thread.start()
 
+    print("start to play for now")
     # while True:
         # do something here e.g. draw keyboard :)
         # time.sleep(2)
