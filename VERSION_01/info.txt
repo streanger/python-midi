@@ -1,0 +1,7 @@
+VERSION_01
+
+board: arduino unoR3 clone
+lib: MIDI_controller (https://github.com/tttapa/MIDI_controller)
+out: fake MIDI (UART)
+audio app: python app --> python_mido_uart.py
+keys number: 44 (12*4 - 4) (half of the keyboard)

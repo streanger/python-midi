@@ -1,10 +1,16 @@
 import sys
+import os
 import time
 import random
 import numpy as np
 import cv2
 
-
+def script_path():
+    currentPath = os.path.realpath(os.path.dirname(sys.argv[0]))
+    os.chdir(currentPath)
+    return currentPath
+    
+    
 def random_codes():
     codes = [random.randrange(21, 65) for x in range(5)]
     return codes
@@ -96,16 +102,23 @@ def draw_over_image(image, combined, codes):
         -image --> image to be drawn over
         -codes --> codes with notes, to be highlighted
     '''
+    colorsOut = [(55, 155, 55), (155, 55, 55), (55, 55, 155)]
+    colorsIn = [(105, 255, 105), (255, 105, 105), (105, 105, 255)]
+    indexes = [key for key, _ in enumerate(colorsOut)]
     for item in combined:
         if item:
-            image[item[0]:item[1], item[2]:item[3]] = item[4]
             if item[-1] in codes:
+                index = random.choice(indexes)
+                # change color of key
+                # image[item[0]:item[1], item[2]:item[3]] = item[4]
+                image[item[0]:item[1], item[2]:item[3]] = colorsIn[index]
                 # item[-1] means note value
                 # make some backlight for key
                 # cv2.rectangle(image, (x1, y1), (x2, y2), (255,0,0), 2)
-                colors = [(105, 255, 105), (255, 105, 105), (105, 105, 255)]
-                color = random.choice(colors)
-                cv2.rectangle(image, (item[2], item[0]), (item[3], item[1]), color, 2)
+                # cv2.rectangle(image, (item[2]-2, item[0]-1), (item[3]+1, item[1]+1), colorsOut[index], 1)
+                cv2.rectangle(image, (item[2]-1, item[0]), (item[3], item[1]), colorsOut[index], 1)
+            else:
+                image[item[0]:item[1], item[2]:item[3]] = item[4]
     return image
     
     
@@ -120,11 +133,14 @@ def create_blank_image(height, width):
     
     
 if __name__ == "__main__":
-    image = create_blank_image(300, 1350)
-    codes = read_codes_online()             # for now generate random values
+    script_path()
     combined = combine_keys_positions()
-    out = draw_over_image(image, combined, codes)
-    show_image('after drawing image', out)
+    for x in range(99):
+        image = create_blank_image(300, 1350)
+        codes = read_codes_online()             # for now generate random values
+        out = draw_over_image(image, combined, codes)
+        cv2.imwrite("some.png", out)
+        show_image('after drawing image', out)
     
     
     '''
