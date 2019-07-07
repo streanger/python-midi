@@ -19,8 +19,13 @@ My struggles with MIDI, with using arduino and python
   
 ### VERSION_03
 
-  - description: *third way is to create arduino with MIDI connector and bypass it over MIDI-USB switch to PC*
-  - to be done
+  - description: *third way is to create arduino with MIDI connector and bypass it over MIDI-USB switch to PC. It can also works over UART, with using FTDI*
+  - board: atmega32
+  - lib: MIDI_controller (https://github.com/tttapa/MIDI_controller)
+  - out: fake MIDI (UART) / MIDI connector
+  - audio app: python app --> python_mido_uart.py / specified_midi_app
+  - keys number: 88 (12*8 - 8; 2x 44-keys-keyboard; can handle 96 in this configuration)
+  - GUI: True (python_mido_uart.py / specified_midi_app)
   
 ### VERSION_04
 
