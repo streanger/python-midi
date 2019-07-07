@@ -1,0 +1,57 @@
+FOR NOW IT'S IN RUBBISH WAY, BUT WORKS (TESTED WITH ALL CONNECTIONS, NOT WITH REAL KEYBOARD)
+
+https://elementztechblog.wordpress.com/2016/10/28/mightycore-an-arduino-core-for-the-atmega16-atmega32-atmega324-and-more/
+
+
+Setup for using atmega32 in arduino ide:
+    1. do this stuff (http://openhardware.ro/using-atmega32-arduino-ide/):
+            Download project https://github.com/eaconner/ATmega32-Arduino/archive/master.zip or ATmega32-Arduino-master.
+            Locate file boards.txt in arduino folder  …arduino-1.5.2\hardware\arduino\avr\boards.txt
+            Append information from zip archive boards.txt to original boards.txt
+            Make a folder named mega32 in …arduino-1.5.2\hardware\arduino\avr\variants
+            Copy file pins_arduino.h from the zip into folder created at step 4.
+            
+    2. compile your sketch with using arduino ide; upload stuff with using avrdude:
+        -path with compiled file: C:\Users\quiter\AppData\Local\Temp\arduino_build_625088
+        
+        avrdude -c stk500v1 -p m32 -Pcom8 -b19200 -U flash:w:m32_test.ino.hex
+        
+        
+    3. fix some errors (https://www.instructables.com/id/Using-Atmega32-with-Arduino-IDE/):
+        change this (in pins_arduino.h):
+            const static uint8_t SDA = 8; //wrong
+            const static uint8_t SCL = 9; //wrong
+        to:
+            const static uint8_t SDA = 17; //correct
+            const static uint8_t SCL = 16; //correct
+            
+        UPDATE:
+
+        For Serial library to work properly must be made following changes to the file HardwareSerial.cpp
+        In ...\arduino-1.5.8\hardware\arduino\avr\cores\arduino\HardwareSerial.cpp
+
+        will replace:
+
+        #if defined(__AVR_ATmega8__)
+            config |= 0x80; // select UCSRC register (shared with UBRRH) 
+        #endif
+        with:
+
+        #if defined(__AVR_ATmega8__) || defined(__AVR_ATmega32__) || defined(__AVR_ATmega16__)
+            config |= 0x80; // select UCSRC register (shared with UBRRH) 
+        #endif
+
+        
+    4. my problem for now --> https://forum.arduino.cc/index.php?topic=336196.0
+        -hardware serial on atmega32 works fine
+        -software serial is not needed, but midi_controller library needs it
+        -to fix it quick, we just need to comment softwareserial part in mido_controller library
+        
+    
+    
+    
+    5. After upload sketch to atmega32, we need to connect two keyboards via pcb, supply atmega32 and use FTDI, to get data to PC
+    
+    6. Handle MIDI commands with using some desktop app (can use python_mido_uart.py)
+    
+    

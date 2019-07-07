@@ -6,9 +6,9 @@ import threading
 import serial
 import mido
 
-import com_ports        # script module
-# connected = False
-import keyboard_translate
+import com_ports                # to get all com's
+import keyboard_translate       # to draw gui
+import cv2                      # to show gui in live mode
 
 
 def script_path():
@@ -60,113 +60,67 @@ def init_serial(com, midi):
     return ser
     
     
-def debug_read_from_port(ser, midi):
-    connected = False
-    global container
-    container = []
-    start = False
-    while not connected:
-        connected = True
-        while True:
-            if midi:
-                reading = ser.read(1)
-            else:
-                reading = ser.readline()
-            print(reading)
-            container.append(reading)
-            if len(container) > 300:
-                return False
-    return True 
-    
-    
-def debug_handle_data(data):
-    ''' not used for now '''
-    return True
-    
-    
 def handle_data(data):
     '''
     this functions take data, which can be convert to msg:
         command, note, velocity = data
-    if note was already played, function will return False
-    
     change name of this function to -> 'play_sound(data)'
     '''
-    global notesData
-    # print(data)
-    command, note, velocity = data
-    # print("note data: {}".format(note), end='\r', flush=True)
-    if False:
-        # different block
-        if command == 0x90:
-            noteValue = 'note_on'
-            if notesPlayed[note]:
-                # print("note: {}, already played".format(note))
-                return False
-            else:
-                notesPlayed[note] = True        # set flag
-        elif command == 0x80:
-            noteValue = 'note_off'
-            notesPlayed[note] = False           # can play again in another turn
-        else:
-            noteValue = 'note_on'
+    
+    if True:
+        msg = mido.parse(data)      # use parser
+        outport.send(msg)           # make sound
     else:
+        global notesData
+        command, note, velocity = data
+        
         if command == 0x90:
             noteValue = 'note_on'
             notesData.append(note)
         elif command == 0x80:
             noteValue = 'note_off'
         else:
-            noteValue = 'note_on'
-    msg = mido.Message(noteValue, note=note, velocity=velocity)
-    outport.send(msg)                       # make sound
-    
-    
-    # show keyboard
-    global image
-    global combined
-    codes = [note]
-    out = keyboard_translate.draw_over_image(image, combined, codes)
-    # cv2.imwrite("some.png", out)
-    keyboard_translate.show_image('after drawing image', out)
+            # think of handling other commands
+            return False
+            
+        msg = mido.Message(noteValue, note=note, velocity=velocity)     # create message
+        outport.send(msg)                                               # make sound
     return True
     
     
-def read_from_port(ser, midi):
+def read_from_port(ser, midi, quiet=False):
     ''' this function is really ugly. I need to clean it depend on midi parameter value '''
     connected = False
     # global container
     container = []
-    start = False
+    
+    # show keyboard data
+    global image
+    global combined
+    codes = []
     while not connected:
         connected = True
         while True:
             if midi:
-                # reading = ord(ser.read(1))
                 reading = list(ser.read(3))
-                # print(reading, end=', ')
-                # print(reading)
-                # container.append(reading)
-                # continue                
-                if True:
-                    t = threading.Thread(target=handle_data, args=(reading,))
-                    t.daemon = True
-                    t.start()
-
-                else:
-                    if reading in (0x80, 0x90) or start:     # put there more values
-                        start = True
-                        container.append(reading)
-                    if len(container) == 3:
-                        # data is complete
-                        if True:
-                            t = threading.Thread(target=handle_data, args=(container,))
-                            t.daemon = True
-                            t.start()
-                        else:
-                            handle_data(container)
-                        container = []
-                        start = False
+                print(reading)
+                if reading[0] == 144:
+                    codes.append(reading[1])
+                elif reading[0] == 128:
+                    codes.remove(reading[1])
+                out = keyboard_translate.draw_over_image(image, combined, codes)
+                cv2.imshow('out', out)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+                
+                # think of which way is better
+                if not quiet:
+                    if True:
+                        t = threading.Thread(target=handle_data, args=(reading,))
+                        t.daemon = True
+                        t.start()
+                    else:
+                        handle_data(reading)
             else:
                 ''' not sure if this will work after changes '''
                 # reading = ord(ser.read(1))
@@ -181,20 +135,13 @@ def read_from_port(ser, midi):
                 # print(reading, end=', ')
                 print(note)
                 continue
-                
-                '''
-                reading = ser.readline()
-                try:
-                    reading = [int(item) for item in reading.strip().decode('utf-8').split()]
-                except:
-                    continue
-                # print(reading)
-                handle_data(reading)
-                '''
+        cv2.destroyAllWindows()
     return True
     
     
 def convert_chars_to_notes(character):
+    ''' this function was used, when keyboard library was flashed into arduino,
+        just to detect keys correctness '''
     dictio = {
         "0": 17,
         "1": 18,
@@ -259,24 +206,29 @@ def notes_dictio():
     
     
 if __name__ == "__main__":
-    # global container
+    script_path()
+    
+    # general part
     global notesData
     notesData = []
     global outport
     outport = mido.open_output()
-    global notesPlayed
-    notesPlayed = notes_dictio()
+    
+    # GUI part
     global combined
     combined = keyboard_translate.combine_keys_positions()
     global image
-    image = keyboard_translate.create_blank_image(300, 1350)
+    image = keyboard_translate.create_blank_image(400, 1350)
+    image = keyboard_translate.draw_around_keyboard(image)
     
+    # *********** SET MODES ***********
     midi = True     # it is used in serial initialization, and reading data
     # midi = False     # it is used in serial initialization, and reading data
-    script_path()
-    ser = init_serial('COM7', midi)
+    quiet = False
+    
+    ser = init_serial('COM3', midi)
     time.sleep(0.1)
-    thread = threading.Thread(target=read_from_port, args=(ser, midi,))
+    thread = threading.Thread(target=read_from_port, args=(ser, midi, quiet))
     # thread = threading.Thread(target=debug_read_from_port, args=(ser, midi,))     # debug
     thread.start()
 
@@ -360,6 +312,14 @@ think of this one:
     
 use this values:
     http://www.inspiredacoustics.com/en/MIDI_note_numbers_and_center_frequencies
+    
+    
+    
+29.06.2019
+    -can't start a new thread error
+    -make some cleaning
+    -think of port com
+    -
     
 '''
 

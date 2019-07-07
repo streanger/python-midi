@@ -2,30 +2,24 @@ import pprint
 from collections import OrderedDict
 import json
 
-def create_notes(initValue=21, shapeX=4, shapeY=12, swap=False, strData=False):
-    '''
-    data = []
-    if not swap:
-        for x in range(12):
-            row = [initValue + y + x*4 for y in range(4)]
-            data.append(row)
-    else:
-        for x in range(12):
-            row = [initValue + 12*y + x for y in range(4)]
-            data.append(row)
-    out = ',\n'.join([str(item) for item in data])
-    out = '{\n' + out.replace('[', '{').replace(']', '}') + '\n};'
-    '''
+def create_notes(initValue=21, shapeX=4, shapeY=12, swap=False, strData=False, constantValue=None):
+    # if constantValue is specified, all data is filled with this value
     data = []
     if not swap:
         for x in range(shapeY):
-            row = [initValue + y + x*shapeX for y in range(shapeX)]
+            if not constantValue is None:
+                row = [constantValue for y in range(shapeX)]
+            else:
+                row = [initValue + y + x*shapeX for y in range(shapeX)]
             if strData:
                 row = list(map(str, row))
             data.append(row)
     else:
         for x in range(shapeY):
-            row = [initValue + shapeY*y + x for y in range(shapeX)]
+            if not constantValue is None:
+                row = [constantValue for y in range(shapeX)]
+            else:
+                row = [initValue + shapeY*y + x for y in range(shapeX)]
             if strData:
                 row = list(map(str, row))
             data.append(row)
@@ -42,10 +36,8 @@ def notes_to_list(notes):
     
     
 if __name__ == "__main__":
-    # notes = create_notes(initValue=0, shapeX=4, shapeY=12, swap=False, strData=True)
-    # notes = create_notes(initValue=17, shapeX=1, shapeY=12, swap=False, strData=False)
-    # notes = create_notes(initValue=17, shapeX=4, shapeY=12, swap=False, strData=False)
-    notes = create_notes(initValue=17, shapeX=4, shapeY=12, swap=True, strData=False)
+    # notes = create_notes(initValue=17, shapeX=4, shapeY=12, swap=True, strData=False, constantValue=0)
+    notes = create_notes(initValue=17, shapeX=8, shapeY=12, swap=True, strData=False)
     print(notes)
     
     
