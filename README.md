@@ -12,6 +12,8 @@ My struggles with MIDI, with using arduino and python
   - keys number: 44 (12*4 - 4) (half of the keyboard)
   - GUI: False
   
+![image](VERSION_01/arduino_midi_bb.png)
+  
 ### VERSION_02
 
   - description: *second way is to create arduino which works as MIDI device and sends data over USB*
