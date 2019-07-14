@@ -1,5 +1,7 @@
 #include "MIDI_Controller.h" // Include the library
 
+// 13.07.2019
+
 /*
                         ATMEL ATmega32
              
@@ -35,12 +37,28 @@
 const int ROWS = 12; 
 const int COLS = 8; 
 
-byte rowPins[ROWS] = {1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14};
-byte colPins[COLS] = {24, 25, 26, 27, 28, 29, 30, 31};
+byte rowPins[ROWS] = {1, 7, 2, 11, 3, 12, 4, 13, 5, 14, 6, 10};
+byte colPins[COLS] = {27, 26, 25, 24, 31, 30, 29, 28};
 const uint8_t velocity = 0b1111111; // Maximum velocity (0b1111111 = 0x7F = 127)
 
 
 const uint8_t addresses[ROWS][COLS] = {   // the note numbers corresponding to the buttons in the matrix
+    {25, 37, 49, 61, 73, 85, 97, 109},
+    {26, 38, 50, 62, 74, 86, 98, 110},
+    {27, 39, 51, 63, 75, 87, 99, 111},
+    {28, 40, 52, 64, 76, 88, 100, 112},
+    {29, 41, 53, 65, 77, 89, 101, 113},
+    {30, 42, 54, 66, 78, 90, 102, 114},
+    {31, 43, 55, 67, 79, 91, 103, 115},
+    {32, 44, 56, 68, 80, 92, 104, 116},
+    {33, 45, 57, 69, 81, 93, 105, 117},
+    {34, 46, 58, 70, 82, 94, 106, 118},
+    {35, 47, 59, 71, 83, 95, 107, 119},
+    {36, 48, 60, 72, 84, 96, 108, 120}
+};
+
+
+/* 
     {17, 29, 41, 53, 65, 77, 89, 101},
     {18, 30, 42, 54, 66, 78, 90, 102},
     {19, 31, 43, 55, 67, 79, 91, 103},
@@ -54,6 +72,7 @@ const uint8_t addresses[ROWS][COLS] = {   // the note numbers corresponding to t
     {27, 39, 51, 63, 75, 87, 99, 111},
     {28, 40, 52, 64, 76, 88, 100, 112}
 };
+*/
 
 ButtonMatrix<ROWS, COLS> buttonmatrix(rowPins, colPins, addresses, 1, velocity);
 

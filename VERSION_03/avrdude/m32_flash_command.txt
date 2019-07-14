@@ -1,0 +1,7 @@
+avrdude -c stk500v1 -p m32 -Pcom8 -b19200 -U flash:w:m32_test.ino.hex
+
+-c      programmer-id
+-p      partno
+-P      port (open your ArduinoIDE -> Tools -> Port)
+-b      baudrate
+-U      memtype:op:filename[:format]

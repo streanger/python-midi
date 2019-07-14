@@ -1,24 +1,22 @@
-FOR NOW IT'S IN RUBBISH WAY, BUT WORKS (TESTED WITH ALL CONNECTIONS, NOT WITH REAL KEYBOARD)
-
-https://elementztechblog.wordpress.com/2016/10/28/mightycore-an-arduino-core-for-the-atmega16-atmega32-atmega324-and-more/
-
-
-Setup for using atmega32 in arduino ide:
-    1. do this stuff (http://openhardware.ro/using-atmega32-arduino-ide/):
-            Download project https://github.com/eaconner/ATmega32-Arduino/archive/master.zip or ATmega32-Arduino-master.
-            Locate file boards.txt in arduino folder  …arduino-1.5.2\hardware\arduino\avr\boards.txt
-            Append information from zip archive boards.txt to original boards.txt
-            Make a folder named mega32 in …arduino-1.5.2\hardware\arduino\avr\variants
-            Copy file pins_arduino.h from the zip into folder created at step 4.
-            
-    2. compile your sketch with using arduino ide; upload stuff with using avrdude:
-        -path with compiled file: C:\Users\quiter\AppData\Local\Temp\arduino_build_625088
-        
-        avrdude -c stk500v1 -p m32 -Pcom8 -b19200 -U flash:w:m32_test.ino.hex
+    GENERAL INFO OF WHAT WE NEED:
+        -arduino IDE (version Arduino_1.8.9 works for me)
+        -atmega32 with elements for minimal setup
+        -ArduinoUnoR3 and some cables (will work as a programmer)
+        -avrdude stuff
+        -arduino midi_controller library
+        -configuration of atmega32 for arduino IDE
+    
+    
+    1. Prepare your arduino ide for using atmega32 (http://openhardware.ro/using-atmega32-arduino-ide/):
+        Download project https://github.com/eaconner/ATmega32-Arduino/archive/master.zip or ATmega32-Arduino-master.
+        Locate file boards.txt in arduino folder  …\Arduino_1.8.9\hardware\arduino\avr\boards.txt
+        Append information from zip archive boards.txt to original boards.txt(…\Arduino_1.8.9\hardware\arduino\avr\boards.txt)
+        Make a folder named mega32 in …\Arduino_1.8.9\hardware\arduino\avr\variants
+        Copy file pins_arduino.h from the zip into folder created in previous step
         
         
-    3. fix some errors (https://www.instructables.com/id/Using-Atmega32-with-Arduino-IDE/):
-        change this (in pins_arduino.h):
+    2. fix some errors (https://www.instructables.com/id/Using-Atmega32-with-Arduino-IDE/):
+        change this in ...\Arduino_1.8.9\hardware\arduino\avr\variants\mega32\pins_arduino.h:
             const static uint8_t SDA = 8; //wrong
             const static uint8_t SCL = 9; //wrong
         to:
@@ -26,32 +24,94 @@ Setup for using atmega32 in arduino ide:
             const static uint8_t SCL = 16; //correct
             
         UPDATE:
-
         For Serial library to work properly must be made following changes to the file HardwareSerial.cpp
-        In ...\arduino-1.5.8\hardware\arduino\avr\cores\arduino\HardwareSerial.cpp
+        In ...\Arduino_1.8.9\hardware\arduino\avr\cores\arduino\HardwareSerial.cpp
+        
+        replace:
 
-        will replace:
-
-        #if defined(__AVR_ATmega8__)
-            config |= 0x80; // select UCSRC register (shared with UBRRH) 
-        #endif
+            #if defined(__AVR_ATmega8__)
+                config |= 0x80; // select UCSRC register (shared with UBRRH) 
+            #endif
+        
         with:
 
-        #if defined(__AVR_ATmega8__) || defined(__AVR_ATmega32__) || defined(__AVR_ATmega16__)
-            config |= 0x80; // select UCSRC register (shared with UBRRH) 
-        #endif
+            #if defined(__AVR_ATmega8__) || defined(__AVR_ATmega32__) || defined(__AVR_ATmega16__)
+                config |= 0x80; // select UCSRC register (shared with UBRRH) 
+            #endif
+            
+            
+    3. install midi_controller library:
+        -download https://github.com/tttapa/MIDI_controller as ZIP file
+        -go to Sketch -> Add library -> Add library.ZIP and select ZIP file from previous step
+        -comment(skip) some part of code in midi_controller library, because of that --> https://forum.arduino.cc/index.php?topic=336196.0
+            -hardware serial on atmega32 works fine, software serial is not needed, but midi_controller library needs it
+            -to fix it quick, we just need to comment softwareserial part in mido_controller library
+            -path to file of the library:
+                C:\Users\USERNAME\Documents\Arduino\libraries\MIDI_controller-master\src\MIDI_Interfaces\SerialMIDI_Interface.h
+            -part of code, to be commented:
+                /*
+                #if defined(__AVR__) || defined(CORE_TEENSY) 
+                #include <SoftwareSerial.h>
+                class SoftwarSerialMIDI_Interface : public SerialMIDI_Interface<SoftwareSerial>
+                {
+                public:
+                  SoftwarSerialMIDI_Interface(SoftwareSerial &serial, unsigned long baud) : SerialMIDI_Interface(serial, baud) {}
+                };
 
+                #endif
+                */
+            -if this won't work, we need to comment any part of code, which is related to:
+                include <SoftwareSerial.h>
+                
+                
+    4. compile your sketch with using arduino ide; make ISP programmer; upload stuff with using avrdude:
+        -path with compiled file: C:\Users\USERNAME\AppData\Local\Temp\arduino_build_XXXXXX (arduino ide shows this path on the bottom, after compilation is done)
+        -localize file with .hex extension
+        -copy that file to directory with avrdude
+        -now you need to configure your arduino board, to work like programmer:
+            -use unoR3 as ISP programmer. To do this continue with the following steps:
+                -connect unoR3 to PC with USB cable
+                -turn on Arduino_1.8.9
+                -go to Examples -> 11.ArduinoISP --> ArduinoISP (! - need some changes?)
+                -set proper port(COMXX), board(Arduino/Genuino Uno), and programmer(AVRISP mkII)
+                -write sketch to your arduino
+                -now your arduino works as ISP programmer. Avrdude.exe see it as "stk500v1"
+            -at this point you need to prepare minimal setup for your atmega32. You can use your own configuration or use this from the "minimal_setup.png" image
+            -if everythings fine connect arduino board, to atmega32 as it is shown in "FG5J2AEJ97LFPDO.LARGE.jpg" image
+        -use the following command, to write your hexfile to atmega32 memory:
+            avrdude -c stk500v1 -p m32 -Pcom8 -b19200 -U flash:w:m32_test.ino.hex
+            where:
+                -c      programmer-id
+                -p      partno
+                -P      port (open your ArduinoIDE -> Tools -> Port)
+                -b      baudrate
+                -U      memtype:op:filename[:format]
+                
+                
+    5. After upload sketch to atmega32, we need to connect two keyboards via pcb (! - may be difficult :()
+    
+    
+    6. you can supply atmega32 with using FTDI and read data over UART. In this configuration you can use "python_mido_uart.py" application, to read state of the keys, and generate sound
+    
+    
+    7. you can also connect MIDI connector to your arduino board --> "arduino_midi_out.png" (! - proper pinout). This will work as MIDI_OUT. Than you need to get some MIDI USB converter, to connect it to your PC.
+    
+    
+    ***************************************************************************************
+    *                                                                                     *
+    *    IF ANYTHING IS UNCLEAR OR DOESN'T WORK LEAVE SOME COMMENT OR WRITE TO MY EMAIL   *
+    *                                                                                     *
+    ***************************************************************************************
+    
+    
+    Legend:
+        (!)     -info for me, that something may require some changes or is not clear
         
-    4. my problem for now --> https://forum.arduino.cc/index.php?topic=336196.0
-        -hardware serial on atmega32 works fine
-        -software serial is not needed, but midi_controller library needs it
-        -to fix it quick, we just need to comment softwareserial part in mido_controller library
+    Power supply possibilities:
+        -FTDI from USB
+        -directly from USB (typeB, or micro)
+        -with using stabilizer (7-12V -> 5V)
         
-    
-    
-    
-    5. After upload sketch to atmega32, we need to connect two keyboards via pcb, supply atmega32 and use FTDI, to get data to PC
-    
-    6. Handle MIDI commands with using some desktop app (can use python_mido_uart.py)
-    
-    
+    Useful links:
+        https://elementztechblog.wordpress.com/2016/10/28/mightycore-an-arduino-core-for-the-atmega16-atmega32-atmega324-and-more/
+        
