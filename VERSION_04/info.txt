@@ -1,0 +1,3 @@
+VERSION_04
+	-description: fourth way is to create binding for dll(loop_midi etc) in python
+	-to be done

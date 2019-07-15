@@ -37,7 +37,8 @@ def notes_to_list(notes):
     
 if __name__ == "__main__":
     # notes = create_notes(initValue=17, shapeX=4, shapeY=12, swap=True, strData=False, constantValue=0)
-    notes = create_notes(initValue=17, shapeX=8, shapeY=12, swap=True, strData=False)
+    # notes = create_notes(initValue=17, shapeX=8, shapeY=12, swap=True, strData=False)
+    notes = create_notes(initValue=25, shapeX=8, shapeY=12, swap=True, strData=False)
     print(notes)
     
     

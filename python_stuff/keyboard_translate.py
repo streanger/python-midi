@@ -12,7 +12,8 @@ def script_path():
     
     
 def random_codes():
-    codes = [random.randrange(21, 65) for x in range(5)]
+    # codes = [random.randrange(21, 65) for x in range(5)]
+    codes = [random.randrange(21, 112) for x in range(5)]
     return codes
     
     
@@ -46,18 +47,26 @@ def play_music(codes):
     return True
     
  
-def combine_keys_positions():
+def combine_keys_positions(top=True):
     '''
         -this function make combined data
         -data stored in combined: posY1, posY2, posX1, posX2, color, black/white, note
         -one white key size is 250x46
         -one balck key size is 175x46    
     '''
-    startNote = 21
-    startX = 25
-    startY = 25
+    
+    if top:
+        startNote = 21
+        # startX, startY = 25, 25
+        startX, startY = 25, 125
+    else:
+        startNote = 69
+        # startX, startY = 25, 25
+        startX, startY = 25, 425
+        
+        
     whiteColor = 230
-    blackColor = 30
+    blackColor = 30    
     
     # generate white keys
     whiteKeys = []
@@ -97,18 +106,33 @@ def combine_keys_positions():
     return combined
     
     
+def draw_around_keyboard(image):
+    # put text
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    cv2.putText(image, 'very strange keyboard', (325, 75), font, 2, (25, 25, 25), 2, cv2.LINE_AA)
+    
+    # draw some background???
+
+    return image
+    
+    
 def draw_over_image(image, combined, codes):
     '''
         -image --> image to be drawn over
         -codes --> codes with notes, to be highlighted
     '''
-    colorsOut = [(55, 155, 55), (155, 55, 55), (55, 55, 155)]
-    colorsIn = [(105, 255, 105), (255, 105, 105), (105, 105, 255)]
+    colorsOut = [(55, 155, 55), (155, 55, 55), (55, 55, 155), (147, 66, 145), (10, 108, 143)]
+    colorsIn = [(105, 255, 105), (255, 105, 105), (105, 105, 255), (193, 117, 193), (114, 230, 250)]
     indexes = [key for key, _ in enumerate(colorsOut)]
-    for item in combined:
+    codesNumber = len(codes)
+    colorsNumber = len(colorsOut)
+    for key, item in enumerate(combined):
         if item:
             if item[-1] in codes:
-                index = random.choice(indexes)
+                # index = random.choice(indexes)      # random way
+                # this could be even better
+                index = codes.index(item[-1])%colorsNumber
+                
                 # change color of key
                 # image[item[0]:item[1], item[2]:item[3]] = item[4]
                 image[item[0]:item[1], item[2]:item[3]] = colorsIn[index]
@@ -134,11 +158,17 @@ def create_blank_image(height, width):
     
 if __name__ == "__main__":
     script_path()
-    combined = combine_keys_positions()
-    for x in range(99):
-        image = create_blank_image(300, 1350)
+    combinedTop = combine_keys_positions(top=True)
+    combinedBottom = combine_keys_positions(top=False)
+    for x in range(21, 113):
+        # image = create_blank_image(400, 1350)
+        image = create_blank_image(750, 1350)
+        image = draw_around_keyboard(image)
         codes = read_codes_online()             # for now generate random values
-        out = draw_over_image(image, combined, codes)
+        # codes = [x]
+        print(codes)
+        out = draw_over_image(image, combinedTop, codes)
+        out = draw_over_image(image, combinedBottom, codes)
         cv2.imwrite("some.png", out)
         show_image('after drawing image', out)
     
@@ -174,5 +204,19 @@ https://stackoverflow.com/questions/3678869/pythonic-way-to-combine-two-lists-in
 todo:
     -make compatible with python_mido_uart script
     -make live mode
+    
+    
+MIDI tutorials:
+    https://learn.sparkfun.com/tutorials/midi-tutorial/all
+    
+    https://create.arduino.cc/projecthub/mega-das/arduino-midi-controller-14c40c
+    https://www.microchip.com/developmenttools/ProductDetails/flip
+    
+    https://mido.readthedocs.io/en/latest/message_types.html
+    https://tttapa.github.io/Arduino/MIDI/Chap03-MIDI-over-Serial.html
+    
+    https://www.instructables.com/id/Custom-Arduino-MIDI-Controller/
+    https://www.instructables.com/id/Arduino-MIDI-Controller/
+    https://www.instructables.com/id/DFU-programmer-on-Mac-OS-X/
     
 '''

@@ -1,0 +1,40 @@
+Przyk³adowe komendy aplikacji avrdude:
+    avrdude -c stk500 -p t13 -U flash:w:test.hex
+
+    avrdude -c stk500v1 -p t13 -Pcom11 -b19200 -U flash:w:test.hex
+
+    Komenda z fusebitami, kolejno odczyt, zapis oraz wgranie flash'a:
+
+    avrdude -c stk500v1 -p t13 -Pcom11 -b19200 -U lfuse:r:-:h -U hfuse:r:-:h
+    avrdude -c stk500v1 -p t13 -Pcom11 -b19200 -U lfuse:w:xxxx:m -U hfuse:w:xxxx:m
+    avrdude -c stk500v1 -p t13 -Pcom11 -b19200 -U flash:w:test.hex
+
+    Odczyt z pamiêci mikrokontrolera:
+
+    avrdude -c stk500v1 -p t13 -Pcom11 -b19200 -U flash:r:testx.hex:i
+
+    -i - intel hex
+    -h - hex
+    -b -binary
+
+    Fusebity dla Attiny13:
+
+    lfuse: 0x6a
+    hfuse: 0xff
+
+    W celu zmiany czasu pracy zegara (domyœlenie dzielony przez 8) wpisujemy:
+
+    lfuse: 0x7a
+    hfues: 0xff
+
+    A propos parametru b19200:
+
+    "tylko ¿e tutaj nie chodzi³o o arduino jako arduinoIDE, tylko o u¿ycie arduino jako programatora ISP, 
+    zamiast usbASP czy innych wynalazków programuj¹cych. W dodatku w MkAvrCalc jest taka opcja do wybrania 
+    w okienku "programator", tyle ¿e nie dzia³a (tak jak powinno, bo programuje AVR wbudowany w Arduino, 
+    a nie ten docelowy). A skoro avrdude to umo¿liwia i obs³uguje prawid³owo, 
+    to graficzna nak³adka na niego - tez powinna mieæ to prawid³owo ogarniête. 
+    Bo brak³o tylko tego jednego parametru " -b19200" przekazywanego do avrdude - bez niego programuje avr w arduino,
+     z nim - programuje avr docelowy, pod³¹czony do arduino. (tak, wiem, bez sensu, ale tak jest). 
+    (a akurat arduino mia³em pod rêk¹, i zrobienie z niego programatora to 3 klikniêcia, 
+    a po usbasp musia³bym jechaæ na drugi koniec miasta, st¹d pogr¹¿y³em siê w poszukiwania czemu to nie dzia³a)"

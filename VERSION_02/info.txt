@@ -1,0 +1,3 @@
+VERSION_02
+	-description: second way is to create arduino which works as MIDI device and sends data over USB
+	-to be done
